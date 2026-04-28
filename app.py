@@ -51,7 +51,7 @@ if uploaded_file is not None:
     if prediction[0] > last_price:
         st.success("📈 BUY Signal")
     else:
-        st.error("📉 SELL Signal"
+        st.error("📉 SELL Signal")
 
     # Sidebar filter
     st.sidebar.title("Controls")
