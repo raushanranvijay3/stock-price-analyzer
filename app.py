@@ -12,37 +12,41 @@ if uploaded_file is not None:
     if 'Date' in df.columns:
         df['Date'] = pd.to_datetime(df['Date'])
         df = df.sort_values('Date')
-        # Moving Averages
+
+    # Sidebar filter
+    st.sidebar.title("Controls")
+    if 'Ticker' in df.columns:
+        ticker = st.sidebar.selectbox("Select Stock", df['Ticker'].unique())
+        df = df[df['Ticker'] == ticker]
+
+    # Moving Averages (used in model)
     df['MA_10'] = df['Close'].rolling(10).mean()
     df['MA_50'] = df['Close'].rolling(50).mean()
 
-    # RSI
+    # ✅ RSI (NEW FEATURE)
     delta = df['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(14).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
     rs = gain / loss
     df['RSI'] = 100 - (100 / (1 + rs))
 
-    # MACD
-    exp1 = df['Close'].ewm(span=12, adjust=False).mean()
-    exp2 = df['Close'].ewm(span=26, adjust=False).mean()
-    df['MACD'] = exp1 - exp2
     # Create target
     df['Target'] = df['Close'].shift(-1)
     df = df.dropna()
 
     from sklearn.ensemble import RandomForestRegressor
 
-    features = ['Close', 'MA_10', 'MA_50', 'RSI', 'MACD']
+    features = ['Close', 'MA_10', 'MA_50', 'RSI']
     X = df[features]
     y = df['Target']
 
     model = RandomForestRegressor()
     model.fit(X, y)
 
-    # Predict next day
+    # Prediction
     latest = X.iloc[-1].values.reshape(1, -1)
     prediction = model.predict(latest)
+
     st.subheader("📈 Next Day Prediction")
     st.write(f"Predicted Price: {prediction[0]:.2f}")
 
@@ -53,16 +57,18 @@ if uploaded_file is not None:
     else:
         st.error("📉 SELL Signal")
 
-    # Sidebar filter
-    st.sidebar.title("Controls")
+    # ✅ RSI DISPLAY (ALWAYS SHOW)
+    st.subheader("📉 RSI Indicator")
+    st.line_chart(df['RSI'])
 
-    if 'Ticker' in df.columns:
-        ticker = st.sidebar.selectbox("Select Stock", df['Ticker'].unique())
-        df = df[df['Ticker'] == ticker]
+    st.write("RSI > 70 = Overbought 🔴")
+    st.write("RSI < 30 = Oversold 🟢")
 
+    # Data Preview
     st.subheader("Data Preview")
     st.write(df.head())
 
+    # Closing Price Chart
     if 'Close' in df.columns:
         st.subheader("Stock Closing Price")
         st.line_chart(df['Close'])
