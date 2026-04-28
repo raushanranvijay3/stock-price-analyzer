@@ -8,6 +8,11 @@ uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
 
+    # Convert Date
+    if 'Date' in df.columns:
+        df['Date'] = pd.to_datetime(df['Date'])
+        df = df.sort_values('Date')
+
     # Sidebar filter
     st.sidebar.title("Controls")
 
